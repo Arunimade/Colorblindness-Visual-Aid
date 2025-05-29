@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Colorblindness Visual Aid</title>
+<title>Colorblindness Visual Aid - Full Types</title>
 <style>
-  /* Aesthetic CSS */
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #f0f4f8;
@@ -32,19 +31,14 @@
     width: 90%;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
   }
   label {
     font-weight: 600;
-    margin-bottom: 0.5rem;
-    display: block;
     color: #444;
   }
-  input[type="file"] {
-    padding: 0.3rem;
-  }
-  select {
-    padding: 0.5rem 1rem;
+  select, input[type="file"] {
+    padding: 0.5rem;
     border-radius: 8px;
     border: 1.5px solid #ccc;
     font-size: 1rem;
@@ -53,7 +47,8 @@
     cursor: pointer;
     transition: border-color 0.3s ease;
   }
-  select:hover, select:focus {
+  select:hover, select:focus,
+  input[type="file"]:hover, input[type="file"]:focus {
     border-color: #2563eb;
   }
   .images-container {
@@ -61,6 +56,7 @@
     gap: 2rem;
     justify-content: center;
     flex-wrap: wrap;
+    margin-top: 1rem;
   }
   .image-box {
     display: flex;
@@ -69,7 +65,7 @@
     width: 45%;
     min-width: 300px;
   }
-  .image-box canvas, .image-box img {
+  .image-box img, .image-box canvas {
     width: 100%;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -79,12 +75,6 @@
     margin-top: 0.5rem;
     font-weight: 600;
     color: #666;
-  }
-  footer {
-    margin-top: auto;
-    padding: 1rem 0;
-    font-size: 0.9rem;
-    color: #999;
   }
   button {
     margin-top: 1rem;
@@ -109,26 +99,28 @@
 </head>
 <body>
 
-<header>Colorblindness Visual Aid</header>
+<header>Colorblindness Visual Aid - Full Types</header>
 
 <main>
   <label for="image-upload">Upload an image:</label>
   <input type="file" id="image-upload" accept="image/*" />
 
-  <label for="filter-select">Select colorblindness filter:</label>
-<select id="filter-select" disabled>
-  <option value="">-- Select Filter --</option>
-  <option value="protanopia">Protanopia (Red-Blind)</option>
-  <option value="deuteranopia">Deuteranopia (Green-Blind)</option>
-  <option value="tritanopia">Tritanopia (Blue-Blind)</option>
-  <option value="protanomaly">Protanomaly (Red-Weak)</option>
-  <option value="deuteranomaly">Deuteranomaly (Green-Weak)</option>
-  <option value="tritanomaly">Tritanomaly (Blue-Weak)</option>
-  <option value="rodmonochromacy">Rod Monochromacy (No color)</option>
-  <option value="conemonochromacy">Cone Monochromacy (Limited color)</option>
-</select>
+  <label for="filter-select">Select your colorblindness type:</label>
+  <select id="filter-select" disabled>
+    <option value="" disabled selected>-- Select Type --</option>
+    <option value="protanopia" title="Red ↔ Green, Common (mostly males)">Protanopia (Red-Blind)</option>
+    <option value="deuteranopia" title="Red ↔ Green, Common (mostly males)">Deuteranopia (Green-Blind)</option>
+    <option value="tritanopia" title="Blue ↔ Yellow, Rare">Tritanopia (Blue-Blind)</option>
+    <option value="protanomaly" title="Red ↔ Green (mild), Common (males)">Protanomaly (Red-Weak)</option>
+    <option value="deuteranomaly" title="Red ↔ Green (mild), Most common type">Deuteranomaly (Green-Weak)</option>
+    <option value="tritanomaly" title="Blue ↔ Green, Yellow ↔ Red, Very rare">Tritanomaly (Blue-Weak)</option>
+    <option value="rod_monochromacy" title="No color, only shades of gray, Extremely rare">Rod Monochromacy (No Color)</option>
+    <option value="cone_monochromacy" title="Very limited color vision, Very rare">Cone Monochromacy (Limited Color)</option>
+  </select>
 
-  <button id="apply-filter" disabled>Apply Filter</button>
+  <label><input type="checkbox" id="mode-toggle" disabled /> Show Correction (enhance colors for your vision)</label>
+
+  <button id="apply-filter" disabled>Apply</button>
 
   <div class="images-container">
     <div class="image-box">
@@ -136,21 +128,20 @@
       <img id="original-image" alt="Original uploaded" />
     </div>
     <div class="image-box">
-      <div>Filtered Image</div>
-      <canvas id="filtered-canvas"></canvas>
+      <div>Processed Image</div>
+      <canvas id="processed-canvas"></canvas>
     </div>
   </div>
 </main>
-
-<footer>© 2025 Colorblindness Visual Aid</footer>
 
 <script>
   const uploadInput = document.getElementById('image-upload');
   const filterSelect = document.getElementById('filter-select');
   const applyBtn = document.getElementById('apply-filter');
+  const modeToggle = document.getElementById('mode-toggle');
   const originalImg = document.getElementById('original-image');
-  const filteredCanvas = document.getElementById('filtered-canvas');
-  const ctx = filteredCanvas.getContext('2d');
+  const processedCanvas = document.getElementById('processed-canvas');
+  const ctx = processedCanvas.getContext('2d');
 
   let image = new Image();
 
@@ -163,67 +154,107 @@
       image.src = event.target.result;
       originalImg.src = event.target.result;
       filterSelect.disabled = false;
+      modeToggle.disabled = false;
       applyBtn.disabled = false;
-      // Clear previous canvas
-      ctx.clearRect(0, 0, filteredCanvas.width, filteredCanvas.height);
+      ctx.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
     }
     reader.readAsDataURL(file);
   });
 
-  // Filters for colorblindness simulation
-  // Matrix approximations for each type (from color vision deficiency research)
-  // The matrices below convert normal RGB to simulated colorblind RGB.
- // Filters for colorblindness simulation
-const colorblindMatrices = {
-  protanopia: [
-    [0.567, 0.433, 0],
-    [0.558, 0.442, 0],
-    [0, 0.242, 0.758]
-  ],
-  deuteranopia: [
-    [0.625, 0.375, 0],
-    [0.7, 0.3, 0],
-    [0, 0.3, 0.7]
-  ],
-  tritanopia: [
-    [0.95, 0.05, 0],
-    [0, 0.433, 0.567],
-    [0, 0.475, 0.525]
-  ],
-  protanomaly: [
-    [0.817, 0.183, 0],
-    [0.333, 0.667, 0],
-    [0, 0.125, 0.875]
-  ],
-  deuteranomaly: [
-    [0.8, 0.2, 0],
-    [0.258, 0.742, 0],
-    [0, 0.142, 0.858]
-  ],
-  tritanomaly: [
-    [0.967, 0.033, 0],
-    [0, 0.733, 0.267],
-    [0, 0.183, 0.817]
-  ],
-  rodmonochromacy: [
-    [0.299, 0.587, 0.114],
-    [0.299, 0.587, 0.114],
-    [0.299, 0.587, 0.114]
-  ],
-  conemonochromacy: [
-    [0.33, 0.33, 0.34],
-    [0.33, 0.33, 0.34],
-    [0.33, 0.33, 0.34]
-  ]
-};
+  // Simulation matrices (approximate)
+  const simulationMatrices = {
+    protanopia: [
+      [0.567, 0.433, 0],
+      [0.558, 0.442, 0],
+      [0, 0.242, 0.758]
+    ],
+    deuteranopia: [
+      [0.625, 0.375, 0],
+      [0.7, 0.3, 0],
+      [0, 0.3, 0.7]
+    ],
+    tritanopia: [
+      [0.95, 0.05, 0],
+      [0, 0.433, 0.567],
+      [0, 0.475, 0.525]
+    ],
+    protanomaly: [
+      [0.817, 0.183, 0],
+      [0.333, 0.667, 0],
+      [0, 0.125, 0.875]
+    ],
+    deuteranomaly: [
+      [0.8, 0.2, 0],
+      [0.258, 0.742, 0],
+      [0, 0.142, 0.858]
+    ],
+    tritanomaly: [
+      [0.967, 0.033, 0],
+      [0, 0.733, 0.267],
+      [0, 0.183, 0.817]
+    ],
+    rod_monochromacy: [
+      [0.299, 0.587, 0.114],
+      [0.299, 0.587, 0.114],
+      [0.299, 0.587, 0.114]
+    ],
+    cone_monochromacy: [
+      [0.299, 0.587, 0.114],
+      [0.299, 0.587, 0.114],
+      [0.299, 0.587, 0.114]
+    ],
+  };
 
+  // Correction matrices (approximate Daltonization)
+  const correctionMatrices = {
+    protanopia: [
+      [1.0, 0.0, 0.0],
+      [0.0, 1.0, 0.0],
+      [-0.299, 0.587, 1.702]
+    ],
+    deuteranopia: [
+      [1.0, 0.0, 0.0],
+      [0.0, 1.0, 0.0],
+      [-0.395, 0.801, 0.0]
+    ],
+    tritanopia: [
+      [1.0, 0.0, 0.0],
+      [0.0, 1.0, 0.0],
+      [0.0, -0.453, 1.453]
+    ],
+    protanomaly: [
+      [1.0, 0.0, 0.0],
+      [0.0, 1.0, 0.0],
+      [-0.150, 0.350, 1.3]
+    ],
+    deuteranomaly: [
+      [1.0, 0.0, 0.0],
+      [0.0, 1.0, 0.0],
+      [-0.200, 0.600, 0.6]
+    ],
+    tritanomaly: [
+      [1.0, 0.0, 0.0],
+      [0.0, 1.0, 0.0],
+      [0.0, -0.25, 1.25]
+    ],
+    rod_monochromacy: [
+      [1,0,0],
+      [1,0,0],
+      [1,0,0]
+    ],
+    cone_monochromacy: [
+      [0.5, 0.5, 0],
+      [0.5, 0.5, 0],
+      [0.5, 0.5, 0]
+    ],
+  };
 
-  function applyColorblindFilter(image, matrix) {
-    filteredCanvas.width = image.width;
-    filteredCanvas.height = image.height;
-    ctx.drawImage(image, 0, 0, image.width, image.height);
+  function applyMatrixFilter(img, matrix) {
+    processedCanvas.width = img.width;
+    processedCanvas.height = img.height;
+    ctx.drawImage(img, 0, 0, img.width, img.height);
 
-    let imgData = ctx.getImageData(0, 0, image.width, image.height);
+    let imgData = ctx.getImageData(0, 0, img.width, img.height);
     let data = imgData.data;
 
     for (let i = 0; i < data.length; i += 4) {
@@ -231,7 +262,6 @@ const colorblindMatrices = {
       let g = data[i + 1];
       let b = data[i + 2];
 
-      // Apply the matrix transformation
       let newR = r * matrix[0][0] + g * matrix[0][1] + b * matrix[0][2];
       let newG = r * matrix[1][0] + g * matrix[1][1] + b * matrix[1][2];
       let newB = r * matrix[2][0] + g * matrix[2][1] + b * matrix[2][2];
@@ -244,16 +274,21 @@ const colorblindMatrices = {
   }
 
   applyBtn.addEventListener('click', () => {
-    const filter = filterSelect.value;
-    if (!filter) return alert('Please select a filter.');
+    const type = filterSelect.value;
+    if (!type) {
+      alert('Please select your colorblindness type.');
+      return;
+    }
 
-    applyColorblindFilter(image, colorblindMatrices[filter]);
+    const isCorrection = modeToggle.checked;
+    const matrix = isCorrection ? correctionMatrices[type] : simulationMatrices[type];
+
+    applyMatrixFilter(image, matrix);
   });
 
-  // On image load, adjust canvas size for preview (optional)
   image.onload = () => {
-    filteredCanvas.width = image.width;
-    filteredCanvas.height = image.height;
+    processedCanvas.width = image.width;
+    processedCanvas.height = image.height;
   };
 </script>
 
