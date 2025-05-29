@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Colorblindness Visual Aid</title>
+<style>
+  /* Aesthetic CSS */
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f4f8;
+    color: #333;
+    margin: 0; padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+  header {
+    margin: 2rem 0 1rem;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2563eb;
+    letter-spacing: 1.2px;
+  }
+  main {
+    background: white;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 900px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+    color: #444;
+  }
+  input[type="file"] {
+    padding: 0.3rem;
+  }
+  select {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 1.5px solid #ccc;
+    font-size: 1rem;
+    outline-offset: 2px;
+    outline-color: #2563eb;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+  }
+  select:hover, select:focus {
+    border-color: #2563eb;
+  }
+  .images-container {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .image-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 45%;
+    min-width: 300px;
+  }
+  .image-box canvas, .image-box img {
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    background: #eee;
+  }
+  .caption {
+    margin-top: 0.5rem;
+    font-weight: 600;
+    color: #666;
+  }
+  footer {
+    margin-top: auto;
+    padding: 1rem 0;
+    font-size: 0.9rem;
+    color: #999;
+  }
+  button {
+    margin-top: 1rem;
+    background: #2563eb;
+    border: none;
+    color: white;
+    padding: 0.7rem 1.4rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  button:disabled {
+    background: #a0b9f7;
+    cursor: not-allowed;
+  }
+  button:hover:not(:disabled) {
+    background: #1e40af;
+  }
+</style>
+</head>
+<body>
+
+<header>Colorblindness Visual Aid</header>
+
+<main>
+  <label for="image-upload">Upload an image:</label>
+  <input type="file" id="image-upload" accept="image/*" />
+
+  <label for="filter-select">Select colorblindness filter:</label>
+<select id="filter-select" disabled>
+  <option value="">-- Select Filter --</option>
+  <option value="protanopia">Protanopia (Red-Blind)</option>
+  <option value="deuteranopia">Deuteranopia (Green-Blind)</option>
+  <option value="tritanopia">Tritanopia (Blue-Blind)</option>
+  <option value="protanomaly">Protanomaly (Red-Weak)</option>
+  <option value="deuteranomaly">Deuteranomaly (Green-Weak)</option>
+  <option value="tritanomaly">Tritanomaly (Blue-Weak)</option>
+  <option value="rodmonochromacy">Rod Monochromacy (No color)</option>
+  <option value="conemonochromacy">Cone Monochromacy (Limited color)</option>
+</select>
+
+  <button id="apply-filter" disabled>Apply Filter</button>
+
+  <div class="images-container">
+    <div class="image-box">
+      <div>Original Image</div>
+      <img id="original-image" alt="Original uploaded" />
+    </div>
+    <div class="image-box">
+      <div>Filtered Image</div>
+      <canvas id="filtered-canvas"></canvas>
+    </div>
+  </div>
+</main>
+
+<footer>© 2025 Colorblindness Visual Aid</footer>
+
+<script>
+  const uploadInput = document.getElementById('image-upload');
+  const filterSelect = document.getElementById('filter-select');
+  const applyBtn = document.getElementById('apply-filter');
+  const originalImg = document.getElementById('original-image');
+  const filteredCanvas = document.getElementById('filtered-canvas');
+  const ctx = filteredCanvas.getContext('2d');
+
+  let image = new Image();
+
+  uploadInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      image.src = event.target.result;
+      originalImg.src = event.target.result;
+      filterSelect.disabled = false;
+      applyBtn.disabled = false;
+      // Clear previous canvas
+      ctx.clearRect(0, 0, filteredCanvas.width, filteredCanvas.height);
+    }
+    reader.readAsDataURL(file);
+  });
+
+  // Filters for colorblindness simulation
+  // Matrix approximations for each type (from color vision deficiency research)
+  // The matrices below convert normal RGB to simulated colorblind RGB.
+ // Filters for colorblindness simulation
+const colorblindMatrices = {
+  protanopia: [
+    [0.567, 0.433, 0],
+    [0.558, 0.442, 0],
+    [0, 0.242, 0.758]
+  ],
+  deuteranopia: [
+    [0.625, 0.375, 0],
+    [0.7, 0.3, 0],
+    [0, 0.3, 0.7]
+  ],
+  tritanopia: [
+    [0.95, 0.05, 0],
+    [0, 0.433, 0.567],
+    [0, 0.475, 0.525]
+  ],
+  protanomaly: [
+    [0.817, 0.183, 0],
+    [0.333, 0.667, 0],
+    [0, 0.125, 0.875]
+  ],
+  deuteranomaly: [
+    [0.8, 0.2, 0],
+    [0.258, 0.742, 0],
+    [0, 0.142, 0.858]
+  ],
+  tritanomaly: [
+    [0.967, 0.033, 0],
+    [0, 0.733, 0.267],
+    [0, 0.183, 0.817]
+  ],
+  rodmonochromacy: [
+    [0.299, 0.587, 0.114],
+    [0.299, 0.587, 0.114],
+    [0.299, 0.587, 0.114]
+  ],
+  conemonochromacy: [
+    [0.33, 0.33, 0.34],
+    [0.33, 0.33, 0.34],
+    [0.33, 0.33, 0.34]
+  ]
+};
+
+
+  function applyColorblindFilter(image, matrix) {
+    filteredCanvas.width = image.width;
+    filteredCanvas.height = image.height;
+    ctx.drawImage(image, 0, 0, image.width, image.height);
+
+    let imgData = ctx.getImageData(0, 0, image.width, image.height);
+    let data = imgData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+      let r = data[i];
+      let g = data[i + 1];
+      let b = data[i + 2];
+
+      // Apply the matrix transformation
+      let newR = r * matrix[0][0] + g * matrix[0][1] + b * matrix[0][2];
+      let newG = r * matrix[1][0] + g * matrix[1][1] + b * matrix[1][2];
+      let newB = r * matrix[2][0] + g * matrix[2][1] + b * matrix[2][2];
+
+      data[i] = Math.min(255, Math.max(0, newR));
+      data[i + 1] = Math.min(255, Math.max(0, newG));
+      data[i + 2] = Math.min(255, Math.max(0, newB));
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  applyBtn.addEventListener('click', () => {
+    const filter = filterSelect.value;
+    if (!filter) return alert('Please select a filter.');
+
+    applyColorblindFilter(image, colorblindMatrices[filter]);
+  });
+
+  // On image load, adjust canvas size for preview (optional)
+  image.onload = () => {
+    filteredCanvas.width = image.width;
+    filteredCanvas.height = image.height;
+  };
+</script>
+
+</body>
+</html>
